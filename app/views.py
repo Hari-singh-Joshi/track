@@ -135,3 +135,81 @@ def payment_failed_page(request):
     error_msg = request.GET.get('error', None)
     return render(request, "payment_failed.html", {"error": error_msg})
 
+
+
+
+@login_required
+def expense_list(request):
+    expenses = ExpensePayment.objects.filter(user=request.user).order_by('-date')
+    
+    # Existing filters
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search = request.GET.get('search')
+
+    if category:
+        expenses = expenses.filter(category=category)
+    if start_date and end_date:
+        expenses = expenses.filter(date__range=[start_date, end_date])
+    if search:
+        expenses = expenses.filter(Q(description__icontains=search) | Q(order_id__icontains=search))
+
+    # Calculate category totals
+    category_totals = (
+        expenses.values('category')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+    )
+    category_totals_list = [
+        {
+            'category': dict(ExpensePayment.CATEGORY_CHOICES).get(item['category'], item['category']),
+            'total': float(item['total']) if item['total'] is not None else 0
+        }
+        for item in category_totals
+    ]
+
+    context = {
+        'expenses': expenses,
+        'categories': ExpensePayment.CATEGORY_CHOICES,
+        'category_totals_json': json.dumps(category_totals_list),
+    }
+    return render(request, 'expense_list.html', context)
+
+
+# here is Update Expense function
+@login_required
+def update_expense(request, pk):
+    # User can only edit their expenses
+    expense = get_object_or_404(ExpensePayment, id=pk, user=request.user)  
+
+    if request.method == 'POST':
+        form = ExpensePaymentForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Expense updated successfully!")
+            return redirect('expense_list')
+        else:
+            messages.error(request, "Invalid form data. Please check your inputs.")
+    else:
+        form = ExpensePaymentForm(instance=expense)
+
+    return render(request, 'expense_form.html', {'form': form, 'action': 'Update'})
+
+# This is Delete Expense Function
+@login_required
+def delete_expense(request, pk):
+    expense = get_object_or_404(ExpensePayment, id=pk, user=request.user)
+
+    if request.method == 'POST':
+        expense.delete()
+        messages.success(request, "🗑️ Expense deleted successfully!")
+        return redirect('expense_list')
+
+    return render(request, 'expense_confirm_delete.html', {'expense': expense})
+
+# This function is to see all details of expense
+@login_required
+def expense_detail(request, pk):
+    expense = get_object_or_404(ExpensePayment, id=pk, user=request.user)
+    return render(request, 'expense_detail.html', {'expense': expense})
