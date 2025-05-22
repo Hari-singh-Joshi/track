@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Payment Success{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+  <div class="alert alert-success" role="alert">
+    <h4 class="alert-heading">🎉 Payment Successful!</h4>
+    <p>Your payment of <strong>₹{{ payment.amount }}</strong> has been processed.</p>
+    <hr>
+    <p class="mb-0"><strong>Category:</strong> {{ payment.category }}</p>
+    <p><strong>Description:</strong> {{ payment.description }}</p>
+    <p><strong>Date:</strong> {{ payment.date }}</p>
+    <p><strong>Payment ID:</strong> {{ payment.payment_id }}</p>
+  </div>
+  <a href="{% url 'create_expense_payment' %}" class="btn btn-primary mt-3">Add Another Payment</a>
+</div>
+{% endblock %}

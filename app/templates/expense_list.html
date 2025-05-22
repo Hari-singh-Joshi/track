@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-4">
+
+    <h1 class="mb-4 text-center">Your Expenses</h1>
+
+    <!-- Filter Form -->
+    <div class="card mb-4 shadow-2-strong">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for value, label in categories %}
+                            <option value="{{ value }}" {% if request.GET.category == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Button -->
+    <div class="mb-3 text-end">
+        <a href="{% url 'create_expense_payment' %}" class="btn btn-success">+ Add Expense</a>
+    </div>
+
+    <!-- Expense Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense.date }}</td>
+                        <td>₹{{ expense.amount }}</td>
+                        <td>{{ expense.description|truncatechars:30 }}</td>
+                        <td>{{ expense.get_category_display }}</td>
+                        <td>
+                            <span class="badge bg-{% if expense.status == 'Paid' %}success{% else %}warning{% endif %}">
+                                {{ expense.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'expense_detail' expense.id %}" class="btn btn-sm btn-info">View</a>
+                            <a href="{% url 'update_expense' expense.id %}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="{% url 'delete_expense' expense.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-3">No expenses found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pie Chart Card -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Expenses by Category</h5>
+        </div>
+        <div class="card-body">
+          <div class="row gx-4 gy-4 align-items-center">
+            <div class="col-12 col-md-6">
+              <canvas id="expenseChart" style="width: 100%; height: 300px;"></canvas>
+            </div>
+            <div class="col-12 col-md-6">
+              <div id="chart-legend" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const categoryTotals = JSON.parse('{{ category_totals_json|escapejs }}');
+
+    if (!categoryTotals || categoryTotals.length === 0) {
+      document.getElementById('expenseChart').style.display = 'none';
+      document.getElementById('chart-legend').innerText = 'No data available for chart.';
+      return;
+    }
+
+    const labels = categoryTotals.map(item => item.category);
+    const data = categoryTotals.map(item => Math.abs(item.total));
+
+    const backgroundColors = [
+      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+      '#9966FF', '#FF9F40', '#8AC24A', '#607D8B',
+      '#E91E63', '#00BCD4'
+    ];
+
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: backgroundColors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const label = ctx.label || '';
+                const val = ctx.raw || 0;
+                const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                const pct = Math.round((val/total)*100);
+                return `${label}: ₹${val} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Build a custom legend
+    const legendContainer = document.getElementById('chart-legend');
+    labels.forEach((lbl, i) => {
+      const color = backgroundColors[i % backgroundColors.length];
+      const val = data[i];
+      const item = document.createElement('div');
+      item.className = 'd-flex align-items-center mb-2';
+      item.innerHTML = `
+        <span style="display:inline-block;width:16px;height:16px;background:${color};border-radius:4px;margin-right:8px;"></span>
+        <span>${lbl}: ₹${val}</span>
+      `;
+      legendContainer.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Error rendering chart:', error);
+  }
+});
+</script>
+{% endblock %}

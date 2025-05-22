@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="my-4">Expense Details</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Amount</dt>
+                <dd class="col-sm-9">₹{{ expense.amount }}</dd>
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">{{ expense.description }}</dd>
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">{{ expense.category }}</dd>
+                <dt class="col-sm-3">Date</dt>
+                <dd class="col-sm-9">{{ expense.date }}</dd>
+                <dt class="col-sm-3">Order ID</dt>
+                <dd class="col-sm-9">{{ expense.order_id }}</dd>
+                <dt class="col-sm-3">Payment ID</dt>
+                <dd class="col-sm-9">{{ expense.payment_id|default:"-" }}</dd>
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9">
+                    <span class="badge bg-{% if expense.status == 'Paid' %}success{% else %}warning{% endif %}">
+                        {{ expense.status }}
+                    </span>
+                </dd>
+            </dl>
+            
+            <div class="mt-4">
+                <a href="{% url 'update_expense' expense.id %}" class="btn btn-primary">Edit</a>
+                <a href="{% url 'delete_expense' expense.id %}" class="btn btn-danger">Delete</a>
+                <a href="{% url 'expense_list' %}" class="btn btn-secondary">Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

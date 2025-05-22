@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center text-primary mb-5 fw-bold">Expense Tracker Dashboard</h2>
+
+    <div class="row justify-content-center g-4">
+
+        <!-- Card 1: View All Expenses -->
+        <div class="col-md-4">
+            <div class="card shadow-3-strong h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-receipt fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">View All Expenses</h5>
+                    <p class="card-text text-muted">Browse and filter your transaction history.</p>
+                    <a href="{% url 'expense_list' %}" class="btn btn-primary btn-rounded w-100 mt-3">
+                        Go to Expenses
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Add Expense -->
+        <div class="col-md-4">
+            <div class="card shadow-3-strong h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-plus-circle fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Add New Expense</h5>
+                    <p class="card-text text-muted">Record a new payment or income.</p>
+                    <a href="{% url 'create_expense_payment' %}" class="btn btn-success btn-rounded w-100 mt-3">
+                        Add Expense
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
